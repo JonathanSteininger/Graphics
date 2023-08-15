@@ -116,7 +116,8 @@ int main(void)
 
     float* PostingButHere = Positions;
 
-    std::cout << std::endl << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
+    std::cout << "OpenGl Version on graphics card: " << glGetString(GL_VERSION) << std::endl;
+    std::cout << "GLS Shader Version on graphics card: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
 
     unsigned int buffer;
     glGenBuffers(1, &buffer);
