@@ -1,0 +1,54 @@
+{
+    "tasks": [
+        {
+            "type": "cppbuild",
+            "label": "Compiling active c++ file.",
+            "command": "/usr/bin/g++",
+            "args": [
+                "-std=c++17",
+                "-fdiagnostics-color=always",
+                "-Wall",
+                "-g",
+
+                "-I${workspaceFolder}/Dependencies/Include",
+                "-I${workspaceFolder}/Dependencies/Src/glew-2.1.0/include",
+
+                "-L${workspaceFolder}/Dependencies/Libraries",
+                "-L${workspaceFolder}/Dependencies/Src/glew-2.1.0/lib",
+
+                "${workspaceFolder}/src/*.cpp",
+                "${workspaceFolder}/Dependencies/Libraries/libglfw3.a",
+                "${workspaceFolder}/Dependencies/Src/glew-2.1.0/lib/libGlew.a",
+
+                "-o",
+                "${workspaceFolder}/Debug/${fileBasenameNoExtension}",
+
+                "-framework",
+                "OpenGL",
+                "-framework",
+                "Cocoa",
+                "-framework",
+                "IOKit",
+                "-framework",
+                "CoreVideo",
+                "-framework",
+                "CoreFoundation",
+                "-framework",
+                "GLUT",
+                "-Wno-deprecated"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/Debug"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "Compiling my graphics application uwu."
+        }
+    ],
+    "version": "2.0.0"
+}
