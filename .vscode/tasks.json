@@ -21,7 +21,7 @@
                 "${workspaceFolder}/Dependencies/Src/glew-2.1.0/lib/libGlew.a",
 
                 "-o",
-                "${workspaceFolder}/Debug/${fileBasenameNoExtension}",
+                "${workspaceFolder}/Debug/Application.app",
 
                 "-framework",
                 "OpenGL",

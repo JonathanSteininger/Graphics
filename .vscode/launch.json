@@ -5,19 +5,18 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "debug latest build and main file. c++",
+            "name": "Launch (lldb)",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/Debug/Application",
             "args": [
                 
             ],
-            "miDebuggerPath": "/usr/bin/lldb",
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}/Debug",
             "environment": [],
             "externalConsole": false,
-            "preLaunchTask": "C/C++: cl.exe build active file"
+            "preLaunchTask": "Compiling active c++ file."
         }
     ]
 }
