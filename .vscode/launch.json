@@ -8,7 +8,7 @@
             "name": "Launch (lldb)",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/Debug/Application",
+            "program": "${workspaceFolder}/Debug/Application.app",
             "args": [
                 
             ],
