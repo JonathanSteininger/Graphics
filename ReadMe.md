@@ -25,7 +25,7 @@
     the shaders I have made use GLS version 1.20 due to apple not updating any drivers.
 </p>
 
-<h1>Running Application<h1>
+<h1>Running Application</h1>
 
 I am using CMake to help compile and manage dependencies.
 
