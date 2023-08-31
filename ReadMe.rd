@@ -24,5 +24,21 @@
     I am running on openGL 4.0 but any newer version should work.
 
     the shaders I have made use GLS version 1.20 due to apple not updating any drivers.
+
+    <ul>
+        <li>
+            OpenGL: 4.0.
 </p>
 
+<h1>Running Application<h1>
+
+I am using CMake to help compile and manage dependencies.
+
+run cmake in the console with this command: "cmake -S . -B ./build/"
+
+this will generate the files necessary for cmake to build the project. you might have to change the c++ compiler path in order to make it compile. You can do this by changing the the cxx copiler path in the CMakeLists.txt file to the full path of your compiler.
+
+<h3>Compiling the project</h3>
+now that you have generated the files needed to compile it. you can now compile it by running the following command: "cmake --build ./build/"
+
+this will use the files that you generated eariler to compile the project. now you can run the outputApp.app file generated inside of ./build/.

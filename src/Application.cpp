@@ -1,9 +1,86 @@
+#include <cstdlib>
+#include <complex>
+#include <ctime>
+#include <ratio>
+#include <chrono>
 #define GLEW_STATIC
 #include <iostream>
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
+#include "include/glew.h"
+#include "include/glfw3.h"
 #include <exception>
 
+inline float RandFloat(){
+    return ((float) rand()) / RAND_MAX;
+}
+class Block {
+    public:
+        float scale;
+};
+class Vector2{
+
+    public:
+        float X,Y;
+        Vector2(float X = 0, float Y = 0){
+            this->X = X;
+            this->Y = Y;
+        }
+        Vector2 operator+(Vector2 obj){
+            Vector2 tmp;
+            tmp.X = X + obj.X;
+            tmp.Y = Y + obj.Y;
+            return tmp;
+        }
+        
+        Vector2 operator-(Vector2 obj){
+            Vector2 tmp;
+            tmp.X = X - obj.X;
+            tmp.Y = Y - obj.Y;
+            return tmp;
+        }
+        
+        Vector2 operator*(Vector2 obj){
+            Vector2 tmp;
+            tmp.X = X * obj.X;
+            tmp.Y = Y * obj.Y;
+            return tmp;
+        }
+        Vector2 operator*(int num){
+            Vector2 tmp;
+            tmp.X = X * num;
+            tmp.Y = Y * num;
+            return tmp;
+        }
+};
+class GameBlock{
+
+    public:
+        float Scale = 1;
+        Vector2 position;
+        Vector2 size;
+        GameBlock(float x, float y, float width, float height){
+            position = Vector2(x,y);
+            size = Vector2(width, height);
+        }
+        GameBlock(Vector2 Position, Vector2 Size){
+            position = Position;
+            size = Size;
+        }
+        float Left(){ return position.X - size.X / 2;}
+        float Right(){ return position.X + size.X / 2;}
+        float Top(){ return position.Y - size.Y / 2;}
+        float Bottom(){ return position.Y + size.Y / 2;}
+
+        void Vertecies(float *outArray){
+            outArray[0] = Left();
+            outArray[1] = Top();
+            outArray[2] = Right();
+            outArray[3] = Top();
+            outArray[4] = Right();
+            outArray[5] = Bottom();
+            outArray[6] = Left();
+            outArray[7] = Bottom();
+        }
+};
 class CustomException : public std::exception
 {
     public:
@@ -17,7 +94,7 @@ class CustomException : public std::exception
     }
 };
 
-static void ValidateShader(unsigned int ShaderID){
+static void ValidateShader(unsigned int ShaderID) {
     int status = 0;
     glGetShaderiv(ShaderID, GL_COMPILE_STATUS, &status);
     if(status == GL_FALSE){
@@ -29,8 +106,8 @@ static void ValidateShader(unsigned int ShaderID){
         errorMessage.append(Message);
         throw CustomException(errorMessage);
     }
-}
-static void ValidateProgram(unsigned int ProgramID){
+} 
+static void ValidateProgram(unsigned int ProgramID) {
     int status = 0;
     glGetProgramiv(ProgramID, GL_LINK_STATUS, &status);
     if(status == GL_FALSE){
@@ -66,7 +143,7 @@ static unsigned int CreateShader(const std::string &vertexShader, const std::str
     glLinkProgram(program);
 
     glValidateProgram(program);
-
+    
     ValidateProgram(program);
 
     glDeleteShader(_vertexShader);
@@ -77,6 +154,9 @@ static unsigned int CreateShader(const std::string &vertexShader, const std::str
 
 int main(void)
 {
+    
+    std::srand(std::time(NULL));
+    
     GLFWwindow* window;
 
     /* Initialize the library */
@@ -102,27 +182,23 @@ int main(void)
     if(glewInit() != GLEW_OK){
         return -1;
     }
-
-    float Positions[8] = {
-        0.5f,
-        0.5f,
-
-        -0.5f,
-        0.5f,
-
-        -0.5f,
-        -0.5f,
-    };
-
-    float* PostingButHere = Positions;
-
+    
     std::cout << "OpenGl Version on graphics card: " << glGetString(GL_VERSION) << std::endl;
     std::cout << "GLS Shader Version on graphics card: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
 
+
+    float positionsArray[8];
+
+    GameBlock gameSquare(0,0,0.3f,0.3f);
+
+    gameSquare.Vertecies(&positionsArray[0]);
+    
+    
     unsigned int buffer;
+
     glGenBuffers(1, &buffer);
     glBindBuffer(GL_ARRAY_BUFFER, buffer);
-    glBufferData(GL_ARRAY_BUFFER, 6 * sizeof(float), &Positions, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, 8 * sizeof(float), &positionsArray, GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
@@ -144,7 +220,7 @@ int main(void)
     "uniform vec2 WindowSize;\n"
     "void main()\n"
     "{\n"
-    "   gl_FragColor = vec4(0.0, 1.0 - smoothstep(0, WindowSize.x, gl_FragCoord.x), mod(gl_FragCoord.x, 20)/19.0, 1.0);\n"
+    "   gl_FragColor = vec4(smoothstep(0, WindowSize.y * 3, gl_FragCoord.y) , 1.0 - smoothstep(0, WindowSize.x * 3, gl_FragCoord.x), smoothstep(0, WindowSize.x * 3, gl_FragCoord.x) , 1.0);\n"
     "}\n";
 
     unsigned int Shader = CreateShader(_vertexShader, _fragmentShader);
@@ -155,10 +231,41 @@ int main(void)
     glfwGetWindowSize(window, &width, &height);
     int _PastSize = width + height;
     glUniform2f(uniform_WindowSize, width, height);
+    bool _flipV = RandFloat() > 0.5f;
+    bool _flipH =  RandFloat() > 0.5f;
+    Vector2 Speed(0.3f * (_flipH ? -1 : 1),0.3f * (_flipV ? -1 : 1));
+    float speedLimit = 0.2f;
+    const Vector2 START_SPEED(abs(Speed.X), abs(Speed.Y));
 
+    std::chrono::high_resolution_clock::time_point pastTime = std::chrono::high_resolution_clock::now();
+    float deltaTime = 0.00001f;
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window))
     {
+        std::chrono::high_resolution_clock::time_point tempTime = std::chrono::high_resolution_clock::now();
+
+        deltaTime = std::chrono::duration_cast<std::chrono::duration<float>>(tempTime - pastTime).count();
+        if(deltaTime == 0) deltaTime += 0.00001f;
+        pastTime = tempTime;
+        gameSquare.position.X += Speed.X * deltaTime;
+        gameSquare.position.Y += Speed.Y * deltaTime;
+
+        if(gameSquare.Right() > 1 && Speed.X > 0 || gameSquare.Left() < -1 && Speed.X < 0) {
+            Speed.X *= -1;
+            Speed.Y = START_SPEED.Y * (0.7f + 0.6f * RandFloat()) * (Speed.Y / abs(Speed.Y)); 
+        }
+        if(gameSquare.Bottom() > 1 && Speed.Y > 0 || gameSquare.Top() < -1 && Speed.Y < 0) { 
+            Speed.Y *= -1;
+            Speed.X = START_SPEED.X * (0.7f + 0.6f * RandFloat()) * (Speed.X / abs(Speed.X)); 
+        }
+        
+        gameSquare.Vertecies(&positionsArray[0]);
+
+        glBufferData(GL_ARRAY_BUFFER, 8 * sizeof(float), &positionsArray, GL_STATIC_DRAW);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
+        //updates vertecies array.
+        //updatesShader uniform
         glfwGetWindowSize(window, &width, &height);
         if(width + height != _PastSize){
             glUniform2f(uniform_WindowSize, width, height);
@@ -167,7 +274,7 @@ int main(void)
         /* Render here */
         glClear(GL_COLOR_BUFFER_BIT);
 
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glDrawArrays(GL_POLYGON,  0, 4);
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);
@@ -180,3 +287,5 @@ int main(void)
     glfwTerminate();
     return 0;
 }
+
+
