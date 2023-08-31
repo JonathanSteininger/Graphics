@@ -22,12 +22,7 @@
 <p>
     Due to apple not updating openGL drivers, </br>
     I am running on openGL 4.0 but any newer version should work.
-
     the shaders I have made use GLS version 1.20 due to apple not updating any drivers.
-
-    <ul>
-        <li>
-            OpenGL: 4.0.
 </p>
 
 <h1>Running Application<h1>
