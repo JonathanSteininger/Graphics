@@ -8,6 +8,44 @@
 #include "include/glew.h"
 #include "include/glfw3.h"
 #include <exception>
+#include <sstream>
+#include <fstream>
+#include <string>
+
+struct ShaderSourceStruct {
+
+    std::string vertexSource;
+    std::string fragmentSource;
+};
+
+static ShaderSourceStruct GetShaderSource(std::string &filePath){
+
+    std::ifstream fileStream;
+    fileStream.open(filePath);
+    if(!fileStream.is_open()){
+        std::cout << "Failed to open shaderFile: " << filePath << "\n";
+    }
+    std::stringstream stringBuilder[2];
+    std::string line;
+    enum class ShaderEnum {
+        NONE = -1, Vertex = 0, Fragment = 1 
+    };
+    ShaderEnum currentShader = ShaderEnum::NONE;
+    while(getline(fileStream, line)){
+        if(line.find("#shader") != std::string::npos){
+            if(line.find("vertex") != std::string::npos){
+                currentShader = ShaderEnum::Vertex;
+            }
+            if(line.find("fragment") != std::string::npos){
+                currentShader = ShaderEnum::Fragment;
+            }
+        } else if(currentShader != ShaderEnum::NONE) {
+            stringBuilder[(int)currentShader] << line << "\n";
+        }
+    }
+    return {stringBuilder[(int)ShaderEnum::Vertex].str(), stringBuilder[(int)ShaderEnum::Fragment].str()};
+}
+
 
 inline float RandFloat(){
     return ((float) rand()) / RAND_MAX;
@@ -152,9 +190,15 @@ static unsigned int CreateShader(const std::string &vertexShader, const std::str
     return program;
 }
 
-int main(void)
+int main(int argc, char* argv[])
 {
-    
+    int slashPos = std::string(argv[0]).find_last_of("/");
+    std::string WORKING_DIR = ".";
+    if(slashPos != std::string::npos){
+        WORKING_DIR = std::string(argv[0]).substr(0,slashPos);
+    }
+
+
     std::srand(std::time(NULL));
     
     GLFWwindow* window;
@@ -185,8 +229,11 @@ int main(void)
     
     std::cout << "OpenGl Version on graphics card: " << glGetString(GL_VERSION) << std::endl;
     std::cout << "GLS Shader Version on graphics card: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
+    std::string shaderPath = WORKING_DIR + "/shaders/basic.shader";
+    ShaderSourceStruct shadersSource = GetShaderSource(shaderPath);
 
-
+    std::cout << shadersSource.vertexSource << "\n";
+    std::cout << shadersSource.fragmentSource << "\n";
     float positionsArray[8];
 
     GameBlock gameSquare(0,0,0.3f,0.3f);
@@ -204,26 +251,9 @@ int main(void)
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
 
 
-    std::string _vertexShader = 
-    "#version 120\n"
-    "\n"
-    "attribute vec4 in_Position;\n"
-    "\n"
-    "void main()\n"
-    "{\n"
-    "   gl_Position = in_Position;\n"
-    "}\n";
 
+    unsigned int Shader = CreateShader(shadersSource.vertexSource, shadersSource.fragmentSource);
 
-    std::string _fragmentShader = 
-    "#version 120\n"
-    "uniform vec2 WindowSize;\n"
-    "void main()\n"
-    "{\n"
-    "   gl_FragColor = vec4(smoothstep(0, WindowSize.y * 3, gl_FragCoord.y) , 1.0 - smoothstep(0, WindowSize.x * 3, gl_FragCoord.x), smoothstep(0, WindowSize.x * 3, gl_FragCoord.x) , 1.0);\n"
-    "}\n";
-
-    unsigned int Shader = CreateShader(_vertexShader, _fragmentShader);
     int uniform_WindowSize = glGetUniformLocation(Shader, "WindowSize");
 
     glUseProgram(Shader);

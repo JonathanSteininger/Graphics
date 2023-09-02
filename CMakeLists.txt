@@ -11,6 +11,8 @@ set(INCLUDE_DIR "${CMAKE_SOURCE_DIR}/src/include")
 
 set(LINKER_LIBRARIES "${LIBRARIES_DIR}/libGLEW.a;${LIBRARIES_DIR}/libglfw3.a")
 
+file(GLOB SHADER_FILES "${CMAKE_SOURCE_DIR}/src/shaders/*")
+file(COPY ${SHADER_FILES} DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/shaders/")
 
 add_executable(outputApp.app src/Application.cpp) 
 
