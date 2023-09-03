@@ -92,6 +92,10 @@ class Vector2{
 class GameBlock{
 
     public:
+        unsigned int indices[6] = {
+            0,1,3,
+            2,1,3
+        };
         float Scale = 1;
         Vector2 position;
         Vector2 size;
@@ -118,6 +122,7 @@ class GameBlock{
             outArray[6] = Left();
             outArray[7] = Bottom();
         }
+
 };
 class CustomException : public std::exception
 {
@@ -229,11 +234,10 @@ int main(int argc, char* argv[])
     
     std::cout << "OpenGl Version on graphics card: " << glGetString(GL_VERSION) << std::endl;
     std::cout << "GLS Shader Version on graphics card: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
+
     std::string shaderPath = WORKING_DIR + "/shaders/basic.shader";
     ShaderSourceStruct shadersSource = GetShaderSource(shaderPath);
 
-    std::cout << shadersSource.vertexSource << "\n";
-    std::cout << shadersSource.fragmentSource << "\n";
     float positionsArray[8];
 
     GameBlock gameSquare(0,0,0.3f,0.3f);
@@ -246,6 +250,12 @@ int main(int argc, char* argv[])
     glGenBuffers(1, &buffer);
     glBindBuffer(GL_ARRAY_BUFFER, buffer);
     glBufferData(GL_ARRAY_BUFFER, 8 * sizeof(float), &positionsArray, GL_STATIC_DRAW);
+
+    unsigned int indexcesBuffer;
+
+    glGenBuffers(2, &indexcesBuffer);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexcesBuffer);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6 * sizeof(unsigned int), &gameSquare.indices, GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
@@ -292,9 +302,6 @@ int main(int argc, char* argv[])
         gameSquare.Vertecies(&positionsArray[0]);
 
         glBufferData(GL_ARRAY_BUFFER, 8 * sizeof(float), &positionsArray, GL_STATIC_DRAW);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
-        //updates vertecies array.
         //updatesShader uniform
         glfwGetWindowSize(window, &width, &height);
         if(width + height != _PastSize){
@@ -303,8 +310,7 @@ int main(int argc, char* argv[])
         }
         /* Render here */
         glClear(GL_COLOR_BUFFER_BIT);
-
-        glDrawArrays(GL_POLYGON,  0, 4);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);
