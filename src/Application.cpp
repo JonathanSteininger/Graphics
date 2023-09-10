@@ -1,6 +1,7 @@
 #include <cstdlib>
 #include <complex>
 #include <ctime>
+#include <functional>
 #include <ratio>
 #include <chrono>
 #define GLEW_STATIC
@@ -216,15 +217,14 @@ class BufferMaintainer{
         unsigned int indeciesBlockCount;
         unsigned int indeciesOffset;
 
-        BufferMaintainer(unsigned int vertexBlockCount, unsigned int indeciesBlockCount, unsigned int indeciesOffset){
+        BufferMaintainer(unsigned int vertexBlockCount, unsigned int indeciesBlockCount){
             this->vertexBlockCount = vertexBlockCount;
             this->indeciesBlockCount = indeciesBlockCount;
-            this->indeciesOffset = indeciesOffset;
+            this->indeciesOffset = vertexBlockCount/2;
         }
         void addPointer(GameBlock* gameBlockPointer){
             amount++;
             blocks.push_back(gameBlockPointer);
-            std::cout << blocks.at(0) << "\n";
         }
         unsigned int GetVertexBufferByteSize(){
             return GetVertexCount() * sizeof(float);
@@ -263,13 +263,142 @@ class CustomException : public std::exception
         return Message.c_str();
     }
 };
-GameBlock gameSquare(0,0,0.3f,0.3f);
-GameBlock gameSquare2(0,0,0.3f,0.3f);
-void keyEvent(GLFWwindow* window, int key, int scancode, int action, int mods){
-    if(key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
-        gameSquare.size = gameSquare.size / Vector2(2,2);
-    }
+enum class Direction{
+    UP = 1, NONE = 0, DOWN = -1
+};
+class paddle{
+    public: 
+        GameBlock transform;
+        float ySpeed;
+        paddle(float xpos, float ypos, float width, float height, float ySpeed) : transform(xpos, ypos, width, height) {
+            this->ySpeed = ySpeed;
+        }
+        void movePaddle(Direction direction, float deltaTime){
+            transform.position.Y += ySpeed * (int)direction * deltaTime;
+            if(transform.Top() < -1) {
+                transform.position.Y = -1 + transform.size.Y / 2;
+            }
+            if(transform.Bottom() > 1) {
+                transform.position.Y = 1 - transform.size.Y / 2;
+            }
+        }
+        bool checkCollision(GameBlock *otherBlock){
+            bool collisionHorizontal = otherBlock->Left() <= transform.Right() && otherBlock->Right() >= transform.Left();
+            bool collisionVertical =  otherBlock->Top() <= transform.Bottom() && otherBlock->Bottom() >= transform.Top();
+            return collisionHorizontal && collisionVertical;
+        }
+};
+class ball{
+    private:
+        Vector2 startSpeed;
+        float maxSpeed = 1;
+    public:
+        GameBlock transform;
+        Vector2 speed;
+        ball(float xpos, float ypos, float size, float xspeed, float yspeed) : transform(xpos, ypos, size, size) {
+            speed.Y = yspeed;
+            speed.X = xspeed;
+            this->startSpeed.Y = yspeed;
+            this->startSpeed.X = xspeed;
+        }
+        void move(float deltaTime, paddle *paddleLeft, paddle *paddleRight){
+            if(transform.position.X > 1 || transform.position.X < -1){
+                reset();
+            }
+            if(checkCollision(&paddleLeft->transform) && speed.X > 0){
+                speed.X *= speed.X > maxSpeed ? -1 : -1.3;
+            }
+            if(checkCollision(&paddleRight->transform) && speed.X < 0){
+                speed.X *= speed.X < -maxSpeed ? -1 : -1.3;
+            }
+            if(transform.position.Y > 1 && speed.Y > 0){
+                speed.Y *= -1;
+            }
+            if(transform.position.Y < -1 && speed.Y < 0){
+                speed.Y *= -1;
+            }
+            transform.position.X += speed.X * deltaTime;
+            transform.position.Y += speed.Y * deltaTime;
+        }
+        void reset(){
+            transform.position.X = 0; 
+            transform.position.Y = 0; 
+            speed.Y = startSpeed.Y;
+            speed.X = startSpeed.X;
+        }
+        bool checkCollision(GameBlock *otherBlock){
+            bool collisionHorizontal = otherBlock->Left() <= transform.Right() && otherBlock->Right() >= transform.Left();
+            bool collisionVertical =  otherBlock->Top() <= transform.Bottom() && otherBlock->Bottom() >= transform.Top();
+            return collisionHorizontal && collisionVertical;
+        }
+};
 
+
+float paddleSpeed = 0.5f;
+float paddlePosition = 0.95f;
+float paddleWidth = 0.03f;
+float paddleHeight = 0.5f;
+paddle paddle1(paddlePosition, 0, paddleWidth, paddleHeight, paddleSpeed);
+paddle paddle2(-paddlePosition, 0, paddleWidth, paddleHeight, paddleSpeed);
+float ballXSpeed = 0.3f;
+float ballYSpeed = 0.1f;
+ball ball1(0, 0, 0.01f, ballXSpeed, ballYSpeed);
+int width = 640;
+int height = 480;
+struct playerKeys{
+    public:
+    int upKey;
+    int downKey;
+    bool upKeyPressed = false;
+    bool downKeyPressed = false;
+
+    playerKeys(int keyCodeUp, int KeyCodeDown){
+        upKey = keyCodeUp;
+        downKey = KeyCodeDown;
+    }
+};
+
+playerKeys player1Keys(GLFW_KEY_UP, GLFW_KEY_DOWN);
+playerKeys player2Keys(GLFW_KEY_W, GLFW_KEY_S);
+float deltaTime = 0;
+
+bool CheckCollision(GameBlock square1,GameBlock square2){
+    bool collisionHorizontal = square2.Left() <= square1.Right() && square2.Right() >= square1.Left();
+    bool collisionVertical =  square2.Top() <= square1.Bottom() && square2.Bottom() >= square1.Top();
+    return collisionHorizontal && collisionVertical;
+}
+
+
+void keyEvent(GLFWwindow* window, int key, int scancode, int action, int mods){
+    if(action == GLFW_PRESS){
+        if(key == player1Keys.upKey){
+            player1Keys.upKeyPressed = true;
+        }
+        if(key == player1Keys.downKey){
+            player1Keys.downKeyPressed = true;
+        }
+        if(key == player2Keys.upKey){
+            player2Keys.upKeyPressed = true;
+        }
+        if(key == player2Keys.downKey){
+            player2Keys.downKeyPressed = true;
+        }
+    }
+    if(action == GLFW_RELEASE){
+        if(key == player1Keys.upKey){
+            player1Keys.upKeyPressed = false;
+        }
+        if(key == player1Keys.downKey){
+            player1Keys.downKeyPressed = false;
+        }
+        if(key == player2Keys.upKey){
+            player2Keys.upKeyPressed = false;
+        }
+        if(key == player2Keys.downKey){
+            player2Keys.downKeyPressed = false;
+        }
+
+    }
 }
 
 static void ValidateShader(unsigned int ShaderID) {
@@ -347,8 +476,6 @@ int main(int argc, char* argv[])
     if (!glfwInit())
         return -1;
 
-    int width = 640;
-    int height = 480;
     std::string programName = "My Program";
 
     /* Create a windowed mode window and its OpenGL context */
@@ -373,20 +500,15 @@ int main(int argc, char* argv[])
     std::string shaderPath = WORKING_DIR + "/shaders/basic.shader";
     ShaderSourceStruct shadersSource = GetShaderSource(shaderPath);
 
+    unsigned int verteciesSize = 8;
+    unsigned int indeciesSize = 6;
 
-    BufferMaintainer bufferManager(8, 6, 4);
-    GameBlock squares[] {
-        GameBlock(1,1,0.1f,0.1f),
-        GameBlock(-1,-1,0.1f,0.1f),
-        GameBlock(-0.8f,0.9f,0.5f,0.1f),
-    };
+    BufferMaintainer bufferManager(8, 6);
         
-    for(int i = 0; i < 3; i++){
-        bufferManager.addPointer(&squares[i]);
-    }
     
-    bufferManager.addPointer(&gameSquare);
-    bufferManager.addPointer(&gameSquare2);
+    bufferManager.addPointer(&paddle1.transform);
+    bufferManager.addPointer(&paddle2.transform);
+    bufferManager.addPointer(&ball1.transform);
 
     unsigned int buffer;
     float dataBuffer[bufferManager.GetVertexCount()];
@@ -407,13 +529,6 @@ int main(int argc, char* argv[])
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
 
-    coutArray<float>(&dataBuffer[0], bufferManager.GetVertexCount());
-    coutArray<unsigned int>(&indeciexDataBuffer[0], bufferManager.GetIndeciesCount());
-
-    std::cout << "memory Comparison\n";
-
-    std::cout << bufferManager.blocks.at(0) << "\n";
-    std::cout << &gameSquare << ", " << &gameSquare2 << "\n";
 
     unsigned int Shader = CreateShader(shadersSource.vertexSource, shadersSource.fragmentSource);
 
@@ -432,7 +547,7 @@ int main(int argc, char* argv[])
     const Vector2 START_SPEED(abs(Speed.X), abs(Speed.Y));
 
     std::chrono::high_resolution_clock::time_point pastTime = std::chrono::high_resolution_clock::now();
-    float deltaTime = 0.00001f;
+    deltaTime = 0.00001f;
     glfwSetKeyCallback(window, keyEvent);
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window))
@@ -442,29 +557,20 @@ int main(int argc, char* argv[])
         deltaTime = std::chrono::duration_cast<std::chrono::duration<float>>(tempTime - pastTime).count();
         if(deltaTime == 0) deltaTime += 0.00001f;
         pastTime = tempTime;
-        gameSquare.position.X += Speed.X * deltaTime;
-        gameSquare.position.Y += Speed.Y * deltaTime;
-
-        if(gameSquare.Right() > 1 && Speed.X > 0 || gameSquare.Left() < -1 && Speed.X < 0) {
-            Speed.X *= -1;
-            Speed.Y = START_SPEED.Y * (0.7f + 0.6f * RandFloat()) * (Speed.Y / abs(Speed.Y)); 
+        
+        if(player1Keys.upKeyPressed && !player1Keys.downKeyPressed){
+            paddle1.movePaddle(Direction::UP, deltaTime);
+        }else if(player1Keys.downKeyPressed && !player1Keys.upKeyPressed){
+            paddle1.movePaddle(Direction::DOWN, deltaTime);
         }
-        if(gameSquare.Bottom() > 1 && Speed.Y > 0 || gameSquare.Top() < -1 && Speed.Y < 0) { 
-            Speed.Y *= -1;
-            Speed.X = START_SPEED.X * (0.7f + 0.6f * RandFloat()) * (Speed.X / abs(Speed.X)); 
-        }
-        gameSquare2.position.X += Speed2.X * deltaTime;
-        gameSquare2.position.Y += Speed2.Y * deltaTime;
-
-        if(gameSquare2.Right() > 1 && Speed2.X > 0 || gameSquare2.Left() < -1 && Speed2.X < 0) {
-            Speed2.X *= -1;
-            Speed2.Y = START_SPEED.Y * (0.7f + 0.6f * RandFloat()) * (Speed2.Y / abs(Speed2.Y)); 
-        }
-        if(gameSquare2.Bottom() > 1 && Speed2.Y > 0 || gameSquare2.Top() < -1 && Speed2.Y < 0) { 
-            Speed2.Y *= -1;
-            Speed2.X = START_SPEED.X * (0.7f + 0.6f * RandFloat()) * (Speed2.X / abs(Speed2.X)); 
+        if(player2Keys.upKeyPressed && !player2Keys.downKeyPressed){
+            paddle2.movePaddle(Direction::UP, deltaTime);
+        }else if(player2Keys.downKeyPressed && !player2Keys.upKeyPressed){
+            paddle2.movePaddle(Direction::DOWN, deltaTime);
         }
         
+        ball1.move(deltaTime, &paddle1, &paddle2);
+
 
         bufferManager.GetVerteciesBuffer(&dataBuffer[0]);
 
