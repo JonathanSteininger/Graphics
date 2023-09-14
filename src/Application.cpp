@@ -14,6 +14,7 @@
 #include <fstream>
 #include <string>
 #include "include/classes.h"
+#include "include/deltaTime.h"
 
 #define GLCall(x) clearErrors();\
     x;\
@@ -151,7 +152,6 @@ int height = 480;
 
 playerKeys player1Keys(GLFW_KEY_UP, GLFW_KEY_DOWN);
 playerKeys player2Keys(GLFW_KEY_W, GLFW_KEY_S);
-float deltaTime = 0;
 
 bool CheckCollision(GameBlock square1,GameBlock square2){
     bool collisionHorizontal = square2.Left() <= square1.Right() && square2.Right() >= square1.Left();
@@ -337,30 +337,26 @@ int main(int argc, char* argv[])
     float speedLimit = 0.2f;
     const Vector2 START_SPEED(abs(Speed.X), abs(Speed.Y));
 
-    std::chrono::high_resolution_clock::time_point pastTime = std::chrono::high_resolution_clock::now();
-    deltaTime = 0.00001f;
+    DeltaTime timeTracker;
     glfwSetKeyCallback(window, keyEvent);
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window))
     {
-        std::chrono::high_resolution_clock::time_point tempTime = std::chrono::high_resolution_clock::now();
+        timeTracker.Tick();
 
-        deltaTime = std::chrono::duration_cast<std::chrono::duration<float>>(tempTime - pastTime).count();
-        if(deltaTime == 0) deltaTime += 0.00001f;
-        pastTime = tempTime;
         
         if(player1Keys.upKeyPressed && !player1Keys.downKeyPressed){
-            paddle1.movePaddle(Direction::UP, deltaTime);
+            paddle1.movePaddle(Direction::UP, timeTracker.deltaTime);
         }else if(player1Keys.downKeyPressed && !player1Keys.upKeyPressed){
-            paddle1.movePaddle(Direction::DOWN, deltaTime);
+            paddle1.movePaddle(Direction::DOWN, timeTracker.deltaTime);
         }
         if(player2Keys.upKeyPressed && !player2Keys.downKeyPressed){
-            paddle2.movePaddle(Direction::UP, deltaTime);
+            paddle2.movePaddle(Direction::UP, timeTracker.deltaTime);
         }else if(player2Keys.downKeyPressed && !player2Keys.upKeyPressed){
-            paddle2.movePaddle(Direction::DOWN, deltaTime);
+            paddle2.movePaddle(Direction::DOWN, timeTracker.deltaTime);
         }
         
-        ball1.move(deltaTime, &paddle1, &paddle2);
+        ball1.move(timeTracker.deltaTime, &paddle1, &paddle2);
 
 
         bufferManager.GetVerteciesBuffer(&dataBuffer[0]);
